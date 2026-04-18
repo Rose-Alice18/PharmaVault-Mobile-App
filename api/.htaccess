@@ -1,0 +1,9 @@
+Options -Indexes
+RewriteEngine On
+
+# Pass existing files through (e.g. uploads/)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Append .php for clean URL routing
+RewriteRule ^(.+)$ $1.php [L,QSA]

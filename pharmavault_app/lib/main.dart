@@ -1,0 +1,102 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'constants/app_colors.dart';
+import 'constants/supabase_constants.dart';
+import 'providers/auth_provider.dart';
+import 'providers/cart_provider.dart';
+import 'providers/order_provider.dart';
+import 'providers/prescription_provider.dart';
+import 'providers/product_provider.dart';
+import 'screens/auth/login_screen.dart';
+import 'screens/auth/register_screen.dart';
+import 'screens/cart/checkout_screen.dart';
+import 'screens/help_support_screen.dart';
+import 'screens/home/product_detail_screen.dart';
+import 'screens/main_screen.dart';
+import 'screens/notifications_screen.dart';
+import 'screens/onboarding_screen.dart';
+import 'screens/orders/order_detail_screen.dart';
+import 'screens/pharmacy_detail_screen.dart';
+import 'screens/prescriptions/prescriptions_screen.dart';
+import 'screens/prescriptions/upload_prescription_screen.dart';
+import 'screens/saved_addresses_screen.dart';
+import 'screens/saved_pharmacies_screen.dart';
+import 'screens/search_screen.dart';
+import 'screens/settings_screen.dart';
+import 'screens/splash_screen.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Supabase.initialize(
+    url:     SupabaseConstants.projectUrl,
+    anonKey: SupabaseConstants.anonKey,
+  );
+
+  runApp(const PharmaVaultApp());
+}
+
+class PharmaVaultApp extends StatelessWidget {
+  const PharmaVaultApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
+      providers: [
+        // Auth is self-contained — reads Supabase session internally
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+
+        // Data providers no longer need a token passed in —
+        // they call Supabase.instance.client directly and read auth.currentUser
+        ChangeNotifierProvider(create: (_) => ProductProvider()),
+        ChangeNotifierProvider(create: (_) => CartProvider()),
+        ChangeNotifierProvider(create: (_) => OrderProvider()),
+        ChangeNotifierProvider(create: (_) => PrescriptionProvider()),
+      ],
+      child: MaterialApp(
+        title: 'PharmaVault',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: AppColors.primary,
+            primary:   AppColors.primary,
+            secondary: AppColors.secondary,
+            surface:   AppColors.surface,
+            error:     AppColors.error,
+          ),
+          useMaterial3: true,
+          appBarTheme: const AppBarTheme(
+            backgroundColor:  AppColors.primary,
+            foregroundColor:  Colors.white,
+            elevation:        0,
+            centerTitle:      true,
+            titleTextStyle:   TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white),
+          ),
+          scaffoldBackgroundColor: AppColors.background,
+        ),
+        initialRoute: '/splash',
+        routes: {
+          '/splash':              (_) => const SplashScreen(),
+          '/onboarding':          (_) => const OnboardingScreen(),
+          '/login':               (_) => const LoginScreen(),
+          '/register':            (_) => const RegisterScreen(),
+          '/main':                (_) => const MainScreen(),
+          '/product-detail':      (_) => const ProductDetailScreen(),
+          '/checkout':            (_) => const CheckoutScreen(),
+          '/order-detail':        (_) => const OrderDetailScreen(),
+          '/upload-prescription': (_) => const UploadPrescriptionScreen(),
+          '/prescriptions':       (_) => const PrescriptionsScreen(),
+          '/pharmacy-detail':     (_) => const PharmacyDetailScreen(),
+          '/notifications':       (_) => const NotificationsScreen(),
+          '/settings':            (_) => const SettingsScreen(),
+          '/help-support':        (_) => const HelpSupportScreen(),
+          '/saved-addresses':     (_) => const SavedAddressesScreen(),
+          '/saved-pharmacies':    (_) => const SavedPharmaciesScreen(),
+          '/search':              (_) => const SearchScreen(),
+        },
+      ),
+    );
+  }
+}

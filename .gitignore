@@ -1,0 +1,12 @@
+# Claude Code settings (internal tool config — not project code)
+.claude/
+
+# PHP vendor dependencies (install with: composer install)
+vendor/
+
+# PHP uploads folder (user-uploaded files)
+uploads/
+
+# OS files
+.DS_Store
+Thumbs.db

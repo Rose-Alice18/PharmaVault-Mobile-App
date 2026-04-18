@@ -1,0 +1,17 @@
+{
+    "name": "pharmavault/mobile-api",
+    "description": "Standalone REST API for the PharmaVault Flutter mobile app",
+    "type": "project",
+    "require": {
+        "php": ">=7.4",
+        "firebase/php-jwt": "^6.10"
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "audit": {
+            "ignore": {
+                "PKSA-y2cr-5h3j-g3ys": "Acknowledged - local development only, no public exposure."
+            }
+        }
+    }
+}
