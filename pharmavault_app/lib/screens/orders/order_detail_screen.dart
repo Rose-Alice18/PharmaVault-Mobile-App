@@ -94,6 +94,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ),
             const SizedBox(height: 12),
 
+            // ── Order Timeline ───────────────────────────────────────────
+            _buildTimeline(status: order.orderStatus),
+            const SizedBox(height: 12),
+
             // ── Delivery info ────────────────────────────────────────────
             if (delivery.isNotEmpty)
               _card(
@@ -166,6 +170,148 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildTimeline({required String status}) {
+    const steps = [
+      ('Order Placed',  'We have received your order',          Icons.shopping_bag_outlined),
+      ('Confirmed',     'Pharmacy has confirmed your order',    Icons.check_circle_outline),
+      ('Processing',    'Your medicines are being prepared',    Icons.inventory_2_outlined),
+      ('Dispatched',    'Order is on its way to you',           Icons.local_shipping_outlined),
+      ('Delivered',     'Order delivered successfully',         Icons.home_outlined),
+    ];
+
+    const statusOrder = ['pending', 'confirmed', 'processing', 'dispatched', 'delivered'];
+    final isCancelled = status == 'cancelled';
+    final currentIdx  = isCancelled ? -1 : statusOrder.indexOf(status).clamp(0, 4);
+
+    if (isCancelled) {
+      return _card(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Text('Order Status', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(color: AppColors.error.withAlpha(20), borderRadius: BorderRadius.circular(8)),
+                  child: const Text('Cancelled', style: TextStyle(color: AppColors.error, fontSize: 11, fontWeight: FontWeight.w700)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Container(
+                  width: 28, height: 28,
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withAlpha(20),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.error, width: 2),
+                  ),
+                  child: const Icon(Icons.close_rounded, size: 14, color: AppColors.error),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Order Cancelled', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.error)),
+                      SizedBox(height: 2),
+                      Text('This order has been cancelled', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Order Status', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+          const SizedBox(height: 16),
+          ...List.generate(steps.length, (i) {
+            final (label, sublabel, icon) = steps[i];
+            final isDone    = i < currentIdx;
+            final isActive  = i == currentIdx;
+            final isPending = i > currentIdx;
+            final isLast    = i == steps.length - 1;
+
+            final dotColor = isDone
+                ? AppColors.success
+                : isActive
+                    ? AppColors.primary
+                    : const Color(0xFFE0E0E0);
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 32,
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 28, height: 28,
+                        decoration: BoxDecoration(
+                          color: isPending ? const Color(0xFFF5F5F5) : dotColor.withAlpha(20),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: dotColor, width: isActive ? 2.5 : 1.5),
+                        ),
+                        child: Icon(
+                          isDone ? Icons.check_rounded : icon,
+                          size: 14,
+                          color: isPending ? const Color(0xFFBDBDBD) : dotColor,
+                        ),
+                      ),
+                      if (!isLast)
+                        Container(
+                          width: 2,
+                          height: 36,
+                          color: isDone ? AppColors.success.withAlpha(80) : const Color(0xFFE0E0E0),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(bottom: isLast ? 0 : 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          label,
+                          style: TextStyle(
+                            fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+                            fontSize: 13,
+                            color: isPending ? AppColors.textSecondary : AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          sublabel,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isPending ? const Color(0xFFBDBDBD) : AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }),
+        ],
       ),
     );
   }

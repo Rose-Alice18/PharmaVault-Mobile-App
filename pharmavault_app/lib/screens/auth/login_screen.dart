@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../providers/auth_provider.dart';
+import '../../utils/validators.dart';
 import '../../providers/cart_provider.dart';
+import '../../providers/notification_provider.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_text_field.dart';
 
@@ -31,11 +33,35 @@ class _LoginScreenState extends State<LoginScreen> {
     final ok   = await auth.login(_emailCtrl.text.trim(), _passCtrl.text);
     if (!mounted) return;
     if (ok) {
-      context.read<CartProvider>().fetchCart();
-      Navigator.pushReplacementNamed(context, '/main');
+      context.read<NotificationProvider>().subscribe(auth.userId!);
+      if (auth.isPharmacy) {
+        Navigator.pushReplacementNamed(context, '/pharmacy-main');
+      } else {
+        context.read<CartProvider>().fetchCart();
+        Navigator.pushReplacementNamed(context, '/main');
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(auth.error ?? 'Login failed.'), backgroundColor: AppColors.error),
+      );
+    }
+  }
+
+  Future<void> _googleSignIn() async {
+    final auth = context.read<AuthProvider>();
+    final ok   = await auth.signInWithGoogle();
+    if (!mounted) return;
+    if (ok) {
+      context.read<NotificationProvider>().subscribe(auth.userId!);
+      if (auth.isPharmacy) {
+        Navigator.pushReplacementNamed(context, '/pharmacy-main');
+      } else {
+        context.read<CartProvider>().fetchCart();
+        Navigator.pushReplacementNamed(context, '/main');
+      }
+    } else if (auth.error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(auth.error!), backgroundColor: AppColors.error),
       );
     }
   }
@@ -77,11 +103,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   controller: _emailCtrl,
                   keyboardType: TextInputType.emailAddress,
                   prefixIcon: Icons.email_outlined,
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Email is required.';
-                    if (!v.contains('@')) return 'Enter a valid email.';
-                    return null;
-                  },
+                  inputFormatters: AppFormatters.email,
+                  validator: AppValidators.email,
                 ),
                 const SizedBox(height: 16),
                 AppTextField(
@@ -89,10 +112,49 @@ class _LoginScreenState extends State<LoginScreen> {
                   controller: _passCtrl,
                   isPassword: true,
                   prefixIcon: Icons.lock_outline,
+                  inputFormatters: AppFormatters.password,
                   validator: (v) => (v == null || v.isEmpty) ? 'Password is required.' : null,
                 ),
                 const SizedBox(height: 28),
                 AppButton(label: 'Sign In', onPressed: _submit, isLoading: isLoading),
+                const SizedBox(height: 20),
+                // Divider
+                Row(
+                  children: [
+                    const Expanded(child: Divider(color: AppColors.divider)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text('or', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                    ),
+                    const Expanded(child: Divider(color: AppColors.divider)),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                // Google Sign In button
+                GestureDetector(
+                  onTap: isLoading ? null : _googleSignIn,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.divider),
+                      boxShadow: [BoxShadow(color: Colors.black.withAlpha(8), blurRadius: 6)],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const _GoogleIcon(),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Continue with Google',
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -105,6 +167,36 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GoogleIcon extends StatelessWidget {
+  const _GoogleIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 22,
+      height: 22,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Center(
+        child: RichText(
+          text: const TextSpan(
+            text: 'G',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF4285F4),
+              fontFamily: 'Arial',
             ),
           ),
         ),

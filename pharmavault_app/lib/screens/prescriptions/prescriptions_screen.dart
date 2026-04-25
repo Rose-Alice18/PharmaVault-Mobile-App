@@ -76,52 +76,62 @@ class _PrescriptionsScreenState extends State<PrescriptionsScreen> {
                       try { uploadDate = DateFormat('d MMM yyyy').format(DateTime.parse(rx.uploadedAt ?? '')); }
                       catch (_) { uploadDate = rx.uploadedAt ?? ''; }
 
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(14),
-                          boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 6)],
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: _statusColor(rx.status).withAlpha(26),
-                                borderRadius: BorderRadius.circular(12),
+                      return GestureDetector(
+                        onTap: () => Navigator.pushNamed(context, '/prescription-detail', arguments: rx),
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 6)],
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: _statusColor(rx.status).withAlpha(26),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(_statusIcon(rx.status), color: _statusColor(rx.status), size: 24),
                               ),
-                              child: Icon(_statusIcon(rx.status), color: _statusColor(rx.status), size: 24),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(rx.prescriptionNumber,
-                                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.textPrimary)),
-                                  if (rx.doctorName != null && rx.doctorName!.isNotEmpty) ...[
-                                    const SizedBox(height: 2),
-                                    Text('Dr. ${rx.doctorName}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(rx.prescriptionNumber,
+                                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.textPrimary)),
+                                    if (rx.doctorName != null && rx.doctorName!.isNotEmpty) ...[
+                                      const SizedBox(height: 2),
+                                      Text('Dr. ${rx.doctorName}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                                    ],
+                                    const SizedBox(height: 4),
+                                    Text(uploadDate, style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
                                   ],
-                                  const SizedBox(height: 4),
-                                  Text(uploadDate, style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+                                ),
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: _statusColor(rx.status).withAlpha(26),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      rx.status.toUpperCase(),
+                                      style: TextStyle(color: _statusColor(rx.status), fontSize: 10, fontWeight: FontWeight.w700),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  const Icon(Icons.chevron_right_rounded, size: 16, color: AppColors.textSecondary),
                                 ],
                               ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: _statusColor(rx.status).withAlpha(26),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                rx.status.toUpperCase(),
-                                style: TextStyle(color: _statusColor(rx.status), fontSize: 10, fontWeight: FontWeight.w700),
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       );
                     },

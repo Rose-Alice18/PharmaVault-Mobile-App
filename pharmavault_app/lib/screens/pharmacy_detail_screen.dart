@@ -1,10 +1,12 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../constants/app_colors.dart';
-import '../models/pharmacy_model.dart';
-import '../providers/product_provider.dart';
 import '../constants/supabase_constants.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import '../models/pharmacy_model.dart';
+import '../providers/cart_provider.dart';
 
 class PharmacyDetailScreen extends StatefulWidget {
   const PharmacyDetailScreen({super.key});
@@ -14,24 +16,38 @@ class PharmacyDetailScreen extends StatefulWidget {
 }
 
 class _PharmacyDetailScreenState extends State<PharmacyDetailScreen> {
-  bool _loaded = false;
+  List<Map<String, dynamic>> _products = [];
+  bool _loading = true;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!_loaded) {
-      _loaded = true;
-      context.read<ProductProvider>().fetchProducts(limit: 10);
+    final pharmacy = ModalRoute.of(context)!.settings.arguments as PharmacyModel;
+    _fetchProducts(pharmacy.customerId);
+  }
+
+  Future<void> _fetchProducts(String pharmacyId) async {
+    setState(() => _loading = true);
+    try {
+      final data = await Supabase.instance.client
+          .from('pharmacy_products')
+          .select('pharmacy_price, stock_count, products(product_id, product_title, product_image, product_keywords, brands(brand_name))')
+          .eq('pharmacy_id', pharmacyId)
+          .eq('is_available', true);
+      if (mounted) setState(() => _products = List<Map<String, dynamic>>.from(data));
+    } catch (_) {}
+    finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final pharmacy = ModalRoute.of(context)!.settings.arguments as PharmacyModel;
-    final products = context.watch<ProductProvider>().products;
+    final cart     = context.read<CartProvider>();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFF4F6F5),
       body: CustomScrollView(
         slivers: [
           // ── Header ──────────────────────────────────────────────────────
@@ -45,7 +61,6 @@ class _PharmacyDetailScreenState extends State<PharmacyDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Back button
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
                     child: Container(
@@ -62,10 +77,7 @@ class _PharmacyDetailScreenState extends State<PharmacyDetailScreen> {
                     children: [
                       Container(
                         width: 60, height: 60,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
+                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
                         child: const Icon(Icons.local_pharmacy_rounded, color: AppColors.primary, size: 30),
                       ),
                       const SizedBox(width: 14),
@@ -76,13 +88,11 @@ class _PharmacyDetailScreenState extends State<PharmacyDetailScreen> {
                             Row(
                               children: [
                                 Expanded(
-                                  child: Text(
-                                    pharmacy.customerName,
-                                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white),
-                                  ),
+                                  child: Text(pharmacy.customerName,
+                                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white)),
                                 ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                  padding: const EdgeInsets.all(5),
                                   decoration: BoxDecoration(
                                     color: Colors.white.withAlpha(30),
                                     borderRadius: BorderRadius.circular(6),
@@ -98,7 +108,8 @@ class _PharmacyDetailScreenState extends State<PharmacyDetailScreen> {
                                 children: [
                                   const Icon(Icons.location_on_outlined, color: Colors.white70, size: 14),
                                   const SizedBox(width: 4),
-                                  Text(pharmacy.customerCity!, style: TextStyle(color: Colors.white.withAlpha(200), fontSize: 13)),
+                                  Text(pharmacy.customerCity!,
+                                      style: TextStyle(color: Colors.white.withAlpha(200), fontSize: 13)),
                                 ],
                               ),
                             ],
@@ -108,7 +119,6 @@ class _PharmacyDetailScreenState extends State<PharmacyDetailScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  // Stats row
                   Row(
                     children: [
                       _StatChip(icon: Icons.star_rounded, label: '4.5', color: const Color(0xFFFBBF24)),
@@ -119,7 +129,6 @@ class _PharmacyDetailScreenState extends State<PharmacyDetailScreen> {
                     ],
                   ),
                   const SizedBox(height: 14),
-                  // Action buttons
                   Row(
                     children: [
                       Expanded(
@@ -127,14 +136,29 @@ class _PharmacyDetailScreenState extends State<PharmacyDetailScreen> {
                           icon: Icons.phone_rounded,
                           label: 'Call',
                           onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(pharmacy.customerContact != null ? 'Calling ${pharmacy.customerContact}...' : 'No contact available')),
-                            );
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text(pharmacy.customerContact != null
+                                  ? 'Calling ${pharmacy.customerContact}...'
+                                  : 'No contact available'),
+                            ));
                           },
                         ),
                       ),
                       const SizedBox(width: 10),
-                      const Expanded(child: _ActionButton(icon: Icons.directions_rounded, label: 'Directions')),
+                      Expanded(
+                        child: _ActionButton(
+                          icon: Icons.directions_rounded,
+                          label: 'Directions',
+                          onTap: () async {
+                            final Uri url = pharmacy.lat != null && pharmacy.lng != null
+                                ? Uri.parse('https://www.google.com/maps/dir/?api=1&destination=${pharmacy.lat},${pharmacy.lng}')
+                                : Uri.parse('https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(pharmacy.customerName)}');
+                            if (await canLaunchUrl(url)) {
+                              await launchUrl(url, mode: LaunchMode.externalApplication);
+                            }
+                          },
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -142,75 +166,156 @@ class _PharmacyDetailScreenState extends State<PharmacyDetailScreen> {
             ),
           ),
 
-          // ── Available medicines ──────────────────────────────────────────
+          // ── Section header ───────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Available Medicines', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-                  Text('${products.length} items', style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                  const Text('Available Medicines',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                  Text(
+                    _loading ? '' : '${_products.length} item${_products.length == 1 ? '' : 's'}',
+                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                  ),
                 ],
               ),
             ),
           ),
 
-          if (products.isEmpty)
+          // ── Product list ─────────────────────────────────────────────────
+          if (_loading)
             const SliverFillRemaining(
-              child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+              child: Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)),
+            )
+          else if (_products.isEmpty)
+            const SliverFillRemaining(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.inventory_2_outlined, size: 48, color: AppColors.textSecondary),
+                    SizedBox(height: 12),
+                    Text('No medicines listed yet', style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
             )
           else
             SliverList(
               delegate: SliverChildBuilderDelegate(
                 (context, i) {
-                  final p = products[i];
-                  final imageUrl = SupabaseConstants.imageUrl(p.productImage);
+                  final row        = _products[i];
+                  final product    = row['products'] as Map<String, dynamic>;
+                  final brand      = product['brands'] as Map<String, dynamic>?;
+                  final price      = (row['pharmacy_price'] as num).toDouble();
+                  final stock      = row['stock_count'] as int;
+                  final productId  = product['product_id'] as int;
+                  final imageUrl   = SupabaseConstants.imageUrl(product['product_image'] as String?);
+                  final isRx       = (product['product_keywords'] as String?)?.toLowerCase().contains('rx') ?? false;
+
                   return GestureDetector(
-                    onTap: () => Navigator.pushNamed(context, '/product-detail', arguments: p.productId),
+                    onTap: () => Navigator.pushNamed(context, '/product-detail', arguments: productId),
                     child: Container(
                       margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(14),
-                        boxShadow: [BoxShadow(color: Colors.black.withAlpha(8), blurRadius: 6)],
+                        border: Border.all(color: const Color(0xFFF0F0F0), width: 1.5),
+                        boxShadow: [BoxShadow(color: Colors.black.withAlpha(6), blurRadius: 8, offset: const Offset(0, 2))],
                       ),
                       child: Row(
                         children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: SizedBox(
-                              width: 56, height: 56,
-                              child: imageUrl.isNotEmpty
-                                  ? CachedNetworkImage(imageUrl: imageUrl, fit: BoxFit.cover,
-                                      placeholder: (ctx, url) => Container(color: AppColors.primaryLight),
-                                      errorWidget: (ctx, url, err) => Container(color: AppColors.primaryLight, child: const Icon(Icons.medication, color: AppColors.primary)))
-                                  : Container(color: AppColors.primaryLight, child: const Icon(Icons.medication, color: AppColors.primary)),
-                            ),
+                          Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: SizedBox(
+                                  width: 60, height: 60,
+                                  child: imageUrl.isNotEmpty
+                                      ? CachedNetworkImage(
+                                          imageUrl: imageUrl, fit: BoxFit.cover,
+                                          placeholder: (ctx, url) => Container(color: const Color(0xFFF4F6F5)),
+                                          errorWidget: (ctx, url, err) => Container(
+                                            color: const Color(0xFFF4F6F5),
+                                            child: const Icon(Icons.medication_rounded, color: AppColors.primary),
+                                          ),
+                                        )
+                                      : Container(
+                                          color: const Color(0xFFF4F6F5),
+                                          child: const Icon(Icons.medication_rounded, color: AppColors.primary),
+                                        ),
+                                ),
+                              ),
+                              if (isRx)
+                                Positioned(
+                                  top: 2, right: 2,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                    decoration: BoxDecoration(color: const Color(0xFFFEF3C7), borderRadius: BorderRadius.circular(4)),
+                                    child: const Text('Rx', style: TextStyle(color: Color(0xFFD97706), fontSize: 8, fontWeight: FontWeight.w800)),
+                                  ),
+                                ),
+                            ],
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(p.productTitle, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
-                                if (p.brandName != null)
-                                  Text(p.brandName!, style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+                                Text(product['product_title'] as String,
+                                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.textPrimary),
+                                    maxLines: 1, overflow: TextOverflow.ellipsis),
+                                if (brand != null)
+                                  Text(brand['brand_name'] as String,
+                                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: stock > 0 ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        stock > 0 ? '$stock in stock' : 'Out of stock',
+                                        style: TextStyle(
+                                          fontSize: 10, fontWeight: FontWeight.w600,
+                                          color: stock > 0 ? AppColors.primary : AppColors.error,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ],
                             ),
                           ),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              Text('GHS ${p.productPrice.toStringAsFixed(2)}',
+                              Text('GHS ${price.toStringAsFixed(2)}',
                                   style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: AppColors.primary)),
-                              const SizedBox(height: 4),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(6)),
-                                child: const Text('Add', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
-                              ),
+                              const SizedBox(height: 6),
+                              if (stock > 0)
+                                GestureDetector(
+                                  onTap: () async {
+                                    final ok = await cart.addItem(productId);
+                                    if (!context.mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                      content: Text(ok ? 'Added to cart!' : cart.error ?? 'Failed.'),
+                                      backgroundColor: ok ? AppColors.success : AppColors.error,
+                                      duration: const Duration(seconds: 2),
+                                    ));
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                                    decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8)),
+                                    child: const Text('Add', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+                                  ),
+                                ),
                             ],
                           ),
                         ],
@@ -218,7 +323,7 @@ class _PharmacyDetailScreenState extends State<PharmacyDetailScreen> {
                     ),
                   );
                 },
-                childCount: products.length,
+                childCount: _products.length,
               ),
             ),
           const SliverToBoxAdapter(child: SizedBox(height: 24)),

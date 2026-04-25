@@ -6,9 +6,12 @@ import 'constants/app_colors.dart';
 import 'constants/supabase_constants.dart';
 import 'providers/auth_provider.dart';
 import 'providers/cart_provider.dart';
+import 'providers/location_provider.dart';
+import 'providers/notification_provider.dart';
 import 'providers/order_provider.dart';
 import 'providers/prescription_provider.dart';
 import 'providers/product_provider.dart';
+import 'services/notification_service.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/cart/checkout_screen.dart';
@@ -25,6 +28,9 @@ import 'screens/saved_addresses_screen.dart';
 import 'screens/saved_pharmacies_screen.dart';
 import 'screens/search_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/pharmacy/pharmacy_main_screen.dart';
+import 'screens/pharmacy/pharmacy_order_detail_screen.dart';
+import 'screens/prescriptions/prescription_detail_screen.dart';
 import 'screens/splash_screen.dart';
 
 void main() async {
@@ -34,6 +40,8 @@ void main() async {
     url:     SupabaseConstants.projectUrl,
     anonKey: SupabaseConstants.anonKey,
   );
+
+  await NotificationService.initialize();
 
   runApp(const PharmaVaultApp());
 }
@@ -47,6 +55,8 @@ class PharmaVaultApp extends StatelessWidget {
       providers: [
         // Auth is self-contained — reads Supabase session internally
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => LocationProvider()..fetchLocation()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
 
         // Data providers no longer need a token passed in —
         // they call Supabase.instance.client directly and read auth.currentUser
@@ -83,6 +93,7 @@ class PharmaVaultApp extends StatelessWidget {
           '/login':               (_) => const LoginScreen(),
           '/register':            (_) => const RegisterScreen(),
           '/main':                (_) => const MainScreen(),
+          '/pharmacy-main':       (_) => const PharmacyMainScreen(),
           '/product-detail':      (_) => const ProductDetailScreen(),
           '/checkout':            (_) => const CheckoutScreen(),
           '/order-detail':        (_) => const OrderDetailScreen(),
@@ -92,9 +103,11 @@ class PharmaVaultApp extends StatelessWidget {
           '/notifications':       (_) => const NotificationsScreen(),
           '/settings':            (_) => const SettingsScreen(),
           '/help-support':        (_) => const HelpSupportScreen(),
-          '/saved-addresses':     (_) => const SavedAddressesScreen(),
-          '/saved-pharmacies':    (_) => const SavedPharmaciesScreen(),
-          '/search':              (_) => const SearchScreen(),
+          '/saved-addresses':       (_) => const SavedAddressesScreen(),
+          '/saved-pharmacies':      (_) => const SavedPharmaciesScreen(),
+          '/search':                (_) => const SearchScreen(),
+          '/pharmacy-order-detail': (_) => const PharmacyOrderDetailScreen(),
+          '/prescription-detail':   (_) => const PrescriptionDetailScreen(),
         },
       ),
     );

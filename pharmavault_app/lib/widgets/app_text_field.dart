@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../constants/app_colors.dart';
 
 class AppTextField extends StatefulWidget {
@@ -10,6 +11,7 @@ class AppTextField extends StatefulWidget {
   final String? Function(String?)? validator;
   final IconData? prefixIcon;
   final int maxLines;
+  final List<TextInputFormatter>? inputFormatters;
 
   const AppTextField({
     super.key,
@@ -21,6 +23,7 @@ class AppTextField extends StatefulWidget {
     this.validator,
     this.prefixIcon,
     this.maxLines = 1,
+    this.inputFormatters,
   });
 
   @override
@@ -33,11 +36,12 @@ class _AppTextFieldState extends State<AppTextField> {
   @override
   Widget build(BuildContext context) {
     return TextFormField(
-      controller:    widget.controller,
-      obscureText:   widget.isPassword && _obscure,
-      keyboardType:  widget.keyboardType,
-      validator:     widget.validator,
-      maxLines:      widget.isPassword ? 1 : widget.maxLines,
+      controller:      widget.controller,
+      obscureText:     widget.isPassword && _obscure,
+      keyboardType:    widget.keyboardType,
+      validator:       widget.validator,
+      maxLines:        widget.isPassword ? 1 : widget.maxLines,
+      inputFormatters: widget.inputFormatters,
       style: const TextStyle(color: AppColors.textPrimary, fontSize: 15),
       decoration: InputDecoration(
         labelText:     widget.label,

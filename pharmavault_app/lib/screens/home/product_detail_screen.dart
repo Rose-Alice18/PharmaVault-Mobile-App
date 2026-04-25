@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/supabase_constants.dart';
 import '../../providers/cart_provider.dart';
@@ -17,6 +18,7 @@ class ProductDetailScreen extends StatefulWidget {
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   bool _loaded = false;
   int  _qty    = 1;
+  List<Map<String, dynamic>> _pharmacies = [];
 
   @override
   void didChangeDependencies() {
@@ -25,7 +27,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       _loaded = true;
       final id = ModalRoute.of(context)!.settings.arguments as int;
       context.read<ProductProvider>().fetchProductById(id);
+      _fetchPharmacies(id);
     }
+  }
+
+  Future<void> _fetchPharmacies(int productId) async {
+    try {
+      final data = await Supabase.instance.client
+          .from('pharmacy_products')
+          .select('pharmacy_price, stock_count, profiles(customer_name, customer_city)')
+          .eq('product_id', productId)
+          .eq('is_available', true)
+          .order('pharmacy_price');
+      if (mounted) setState(() => _pharmacies = List<Map<String, dynamic>>.from(data));
+    } catch (_) {}
   }
 
   @override
@@ -205,36 +220,59 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                     ),
 
-                    // ── Compare prices ─────────────────────────────────────
+                    // ── Available At ───────────────────────────────────────
                     _InfoSection(
                       title: 'Available At',
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryLight,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.local_pharmacy_rounded, color: AppColors.primary, size: 20),
-                            const SizedBox(width: 10),
-                            const Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('PharmaVault Partner Pharmacies', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.textPrimary)),
-                                  SizedBox(height: 2),
-                                  Text('Best price guaranteed', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                                ],
-                              ),
+                      child: _pharmacies.isEmpty
+                          ? const Text('Not available at any partner pharmacy.',
+                              style: TextStyle(color: AppColors.textSecondary, fontSize: 13))
+                          : Column(
+                              children: _pharmacies.map((row) {
+                                final profile = row['profiles'] as Map<String, dynamic>;
+                                final price   = (row['pharmacy_price'] as num).toDouble();
+                                final stock   = row['stock_count'] as int;
+                                final city    = profile['customer_city'] as String?;
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF4F6F5),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 36, height: 36,
+                                        decoration: BoxDecoration(color: AppColors.primaryLight, borderRadius: BorderRadius.circular(10)),
+                                        child: const Icon(Icons.local_pharmacy_rounded, color: AppColors.primary, size: 18),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(profile['customer_name'] as String,
+                                                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.textPrimary)),
+                                            if (city != null)
+                                              Text(city, style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+                                          ],
+                                        ),
+                                      ),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          Text('GHS ${price.toStringAsFixed(2)}',
+                                              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: AppColors.primary)),
+                                          Text(stock > 0 ? '$stock in stock' : 'Out of stock',
+                                              style: TextStyle(fontSize: 10, color: stock > 0 ? AppColors.success : AppColors.error, fontWeight: FontWeight.w600)),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
                             ),
-                            Text(
-                              'GHS ${product.productPrice.toStringAsFixed(2)}',
-                              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.primary),
-                            ),
-                          ],
-                        ),
-                      ),
                     ),
 
                     // ── Quantity picker ────────────────────────────────────

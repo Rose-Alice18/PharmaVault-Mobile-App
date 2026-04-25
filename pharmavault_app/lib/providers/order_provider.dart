@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../constants/supabase_constants.dart';
 import '../models/order_model.dart';
+import '../services/notification_service.dart';
 
 class OrderProvider extends ChangeNotifier {
   List<OrderModel>     _orders        = [];
@@ -95,6 +96,9 @@ class OrderProvider extends ChangeNotifier {
     required String address,
     required String city,
     required String contact,
+    bool isPaid = false,
+    double paymentAmount = 0.0,
+    String? paymentReference,
   }) async {
     if (_uid == null) { _error = 'Not logged in.'; notifyListeners(); return null; }
     _isLoading = true;
@@ -105,7 +109,7 @@ class OrderProvider extends ChangeNotifier {
       // 1. Fetch current cart from Supabase
       final cartRaw = await _db
           .from('cart')
-          .select('cart_qty, p_id, products(product_price)')
+          .select('cart_qty, product_id, products(product_price)')
           .eq('c_id', _uid!);
 
       final cartItems = cartRaw as List;
@@ -143,8 +147,8 @@ class OrderProvider extends ChangeNotifier {
         'order_total':     total,
         'order_status':    'pending',
         'delivery_notes':  deliveryNotes,
-        'payment_amount':  0.0,
-        'is_paid':         false,
+        'payment_amount':  paymentAmount,
+        'is_paid':         isPaid,
       }).select().single();
 
       final orderId = orderRes['order_id'] as int;
@@ -157,7 +161,7 @@ class OrderProvider extends ChangeNotifier {
             0.0;
         return {
           'order_id':  orderId,
-          'p_id':      item['p_id'] as int,
+          'product_id': item['product_id'] as int,
           'item_qty':  item['cart_qty'] as int,
           'item_price': price,
         };
@@ -170,12 +174,15 @@ class OrderProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       await fetchOrders();
+      await NotificationService.showOrderPlaced(invoiceNo: invoiceNo);
 
       return {
-        'invoice_no': invoiceNo,
-        'order_id':   orderId,
-        'item_count': cartItems.length,
-        'status':     'pending',
+        'invoice_no':        invoiceNo,
+        'order_id':          orderId,
+        'item_count':        cartItems.length,
+        'status':            'pending',
+        'is_paid':           isPaid,
+        'payment_reference': paymentReference,
       };
     } catch (e) {
       _error     = 'Failed to place order. Please try again.';

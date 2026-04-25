@@ -37,77 +37,58 @@ class _MainScreenState extends State<MainScreen> {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          boxShadow: [BoxShadow(color: Colors.black.withAlpha(15), blurRadius: 12, offset: const Offset(0, -2))],
+          boxShadow: [
+            BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 16, offset: const Offset(0, -2)),
+          ],
         ),
-        child: SafeArea(
-          child: BottomNavigationBar(
-            currentIndex: _currentIndex,
-            onTap: (i) => setState(() => _currentIndex = i),
-            type: BottomNavigationBarType.fixed,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            selectedItemColor: AppColors.primary,
-            unselectedItemColor: AppColors.textSecondary,
-            selectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
-            unselectedLabelStyle: const TextStyle(fontSize: 11),
-            items: [
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.home_outlined),
-                activeIcon: Icon(Icons.home_rounded),
-                label: 'Home',
+        child: NavigationBar(
+          selectedIndex: _currentIndex,
+          onDestinationSelected: (i) => setState(() => _currentIndex = i),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          height: 64,
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          indicatorColor: AppColors.primaryLight,
+          indicatorShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          destinations: [
+            const NavigationDestination(
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home_rounded, color: AppColors.primary),
+              label: 'Home',
+            ),
+            const NavigationDestination(
+              icon: Icon(Icons.search_outlined),
+              selectedIcon: Icon(Icons.search_rounded, color: AppColors.primary),
+              label: 'Search',
+            ),
+            NavigationDestination(
+              icon: Badge(
+                isLabelVisible: cartCount > 0,
+                label: Text('$cartCount'),
+                backgroundColor: AppColors.error,
+                textStyle: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700),
+                child: const Icon(Icons.shopping_bag_outlined),
               ),
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.search_outlined),
-                activeIcon: Icon(Icons.search_rounded),
-                label: 'Search',
+              selectedIcon: Badge(
+                isLabelVisible: cartCount > 0,
+                label: Text('$cartCount'),
+                backgroundColor: AppColors.error,
+                textStyle: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700),
+                child: const Icon(Icons.shopping_bag_rounded, color: AppColors.primary),
               ),
-              BottomNavigationBarItem(
-                icon: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    const Icon(Icons.shopping_cart_outlined),
-                    if (cartCount > 0)
-                      Positioned(
-                        right: -6, top: -4,
-                        child: Container(
-                          padding: const EdgeInsets.all(3),
-                          decoration: const BoxDecoration(color: AppColors.error, shape: BoxShape.circle),
-                          constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                          child: Text('$cartCount', style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700)),
-                        ),
-                      ),
-                  ],
-                ),
-                activeIcon: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    const Icon(Icons.shopping_cart_rounded),
-                    if (cartCount > 0)
-                      Positioned(
-                        right: -6, top: -4,
-                        child: Container(
-                          padding: const EdgeInsets.all(3),
-                          decoration: const BoxDecoration(color: AppColors.error, shape: BoxShape.circle),
-                          constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                          child: Text('$cartCount', style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700)),
-                        ),
-                      ),
-                  ],
-                ),
-                label: 'Cart',
-              ),
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.receipt_long_outlined),
-                activeIcon: Icon(Icons.receipt_long_rounded),
-                label: 'Orders',
-              ),
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.person_outline_rounded),
-                activeIcon: Icon(Icons.person_rounded),
-                label: 'Profile',
-              ),
-            ],
-          ),
+              label: 'Cart',
+            ),
+            const NavigationDestination(
+              icon: Icon(Icons.receipt_long_outlined),
+              selectedIcon: Icon(Icons.receipt_long_rounded, color: AppColors.primary),
+              label: 'Orders',
+            ),
+            const NavigationDestination(
+              icon: Icon(Icons.person_outline_rounded),
+              selectedIcon: Icon(Icons.person_rounded, color: AppColors.primary),
+              label: 'Profile',
+            ),
+          ],
         ),
       ),
     );

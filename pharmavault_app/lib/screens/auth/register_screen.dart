@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../providers/auth_provider.dart';
+import '../../utils/validators.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_text_field.dart';
 
@@ -72,7 +73,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   label: 'Full Name',
                   controller: _nameCtrl,
                   prefixIcon: Icons.person_outline,
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Name is required.' : null,
+                  inputFormatters: AppFormatters.name,
+                  validator: AppValidators.name,
                 ),
                 const SizedBox(height: 14),
                 AppTextField(
@@ -80,11 +82,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   controller: _emailCtrl,
                   keyboardType: TextInputType.emailAddress,
                   prefixIcon: Icons.email_outlined,
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Email is required.';
-                    if (!v.contains('@')) return 'Enter a valid email.';
-                    return null;
-                  },
+                  inputFormatters: AppFormatters.email,
+                  validator: AppValidators.email,
                 ),
                 const SizedBox(height: 14),
                 AppTextField(
@@ -92,11 +91,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   controller: _passCtrl,
                   isPassword: true,
                   prefixIcon: Icons.lock_outline,
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'Password is required.';
-                    if (v.length < 6) return 'Password must be at least 6 characters.';
-                    return null;
-                  },
+                  inputFormatters: AppFormatters.password,
+                  validator: AppValidators.password,
                 ),
                 const SizedBox(height: 14),
                 AppTextField(
@@ -104,21 +100,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   controller: _contactCtrl,
                   keyboardType: TextInputType.phone,
                   prefixIcon: Icons.phone_outlined,
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Phone number is required.' : null,
+                  inputFormatters: AppFormatters.phone,
+                  validator: AppValidators.phone,
                 ),
                 const SizedBox(height: 14),
                 AppTextField(
                   label: 'Country',
                   controller: _countryCtrl,
                   prefixIcon: Icons.public,
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Country is required.' : null,
+                  inputFormatters: AppFormatters.city,
+                  validator: AppValidators.required('Country'),
                 ),
                 const SizedBox(height: 14),
                 AppTextField(
                   label: 'City',
                   controller: _cityCtrl,
                   prefixIcon: Icons.location_city_outlined,
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'City is required.' : null,
+                  inputFormatters: AppFormatters.city,
+                  validator: AppValidators.city,
                 ),
                 const SizedBox(height: 28),
                 AppButton(label: 'Create Account', onPressed: _submit, isLoading: isLoading),

@@ -49,7 +49,7 @@ class CartProvider extends ChangeNotifier {
           .from('cart')
           .select('cart_id, cart_qty')
           .eq('c_id', _uid!)
-          .eq('p_id', productId)
+          .eq('product_id', productId)
           .maybeSingle();
 
       if (existing != null) {
@@ -60,7 +60,7 @@ class CartProvider extends ChangeNotifier {
             .eq('cart_id', existing['cart_id'] as int);
       } else {
         await _db.from('cart').insert({
-          'p_id':     productId,
+          'product_id':     productId,
           'c_id':     _uid,
           'cart_qty': qty,
         });
@@ -81,7 +81,7 @@ class CartProvider extends ChangeNotifier {
           .from('cart')
           .update({'cart_qty': qty})
           .eq('c_id', _uid!)
-          .eq('p_id', productId);
+          .eq('product_id', productId);
       await fetchCart();
       return true;
     } catch (e) {
@@ -98,7 +98,7 @@ class CartProvider extends ChangeNotifier {
           .from('cart')
           .delete()
           .eq('c_id', _uid!)
-          .eq('p_id', productId);
+          .eq('product_id', productId);
       await fetchCart();
       return true;
     } catch (e) {
