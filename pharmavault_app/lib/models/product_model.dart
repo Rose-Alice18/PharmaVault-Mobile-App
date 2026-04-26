@@ -37,8 +37,8 @@ class ProductModel {
       productStock:       json['product_stock'] as int? ?? 0,
       productImage:       json['product_image'] as String?,
       productKeywords:    json['product_keywords'] as String?,
-      productCat:         json['product_cat'] as int?,
-      productBrand:       json['product_brand'] as int?,
+      productCat:         json['cat_id'] as int?,
+      productBrand:       json['brand_id'] as int?,
       catName:            json['cat_name'] as String? ?? cat?['cat_name'] as String?,
       brandName:          json['brand_name'] as String? ?? brand?['brand_name'] as String?,
     );

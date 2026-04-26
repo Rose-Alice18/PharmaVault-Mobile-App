@@ -33,7 +33,7 @@ class PrescriptionDetailScreen extends StatelessWidget {
     try { uploadDate = DateFormat('d MMM yyyy').format(DateTime.parse(rx.uploadedAt ?? '')); } catch (_) {}
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(rx.prescriptionNumber),
         backgroundColor: Colors.white,

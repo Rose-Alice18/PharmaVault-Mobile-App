@@ -74,15 +74,15 @@ class _OrdersScreenState extends State<OrdersScreen> with SingleTickerProviderSt
     final past   = op.orders.where((o) => _pastStatuses.contains(o.orderStatus)).toList();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('My Orders'),
         automaticallyImplyLeading: false,
         bottom: TabBar(
           controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textSecondary,
-          indicatorColor: AppColors.primary,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white.withAlpha(160),
+          indicatorColor: Colors.white,
           indicatorWeight: 3,
           labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
           tabs: [
@@ -184,7 +184,7 @@ class _OrderList extends StatelessWidget {
             child: Container(
               margin: const EdgeInsets.only(bottom: 12),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [BoxShadow(color: Colors.black.withAlpha(8), blurRadius: 8)],
               ),
@@ -210,10 +210,10 @@ class _OrderList extends StatelessWidget {
                             children: [
                               Text(
                                 order.invoiceNo,
-                                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.textPrimary),
+                                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
                               ),
                               const SizedBox(height: 2),
-                              Text(dateStr, style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+                              Text(dateStr, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(140), fontSize: 11)),
                             ],
                           ),
                         ),
@@ -231,22 +231,22 @@ class _OrderList extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Divider(height: 1, color: AppColors.divider),
+                  Divider(height: 1, color: Theme.of(context).dividerColor),
                   // Bottom row
                   Padding(
                     padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
                     child: Row(
                       children: [
-                        const Icon(Icons.local_pharmacy_outlined, size: 14, color: AppColors.textSecondary),
+                        Icon(Icons.local_pharmacy_outlined, size: 14, color: Theme.of(context).colorScheme.onSurface.withAlpha(140)),
                         const SizedBox(width: 4),
-                        const Text('PharmaVault', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                        Text('PharmaVault', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withAlpha(140))),
                         const Spacer(),
                         Text(
                           'GHS ${order.orderTotal.toStringAsFixed(2)}',
                           style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.primary),
                         ),
                         const SizedBox(width: 4),
-                        const Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 18),
+                        Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withAlpha(120), size: 18),
                       ],
                     ),
                   ),

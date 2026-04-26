@@ -28,7 +28,7 @@ class _CartScreenState extends State<CartScreen> {
     final cart = context.watch<CartProvider>();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('My Cart'),
         automaticallyImplyLeading: false,
@@ -82,7 +82,7 @@ class _CartScreenState extends State<CartScreen> {
                               margin: const EdgeInsets.only(bottom: 12),
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: Theme.of(context).cardColor,
                                 borderRadius: BorderRadius.circular(14),
                                 boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 6)],
                               ),
@@ -99,13 +99,13 @@ class _CartScreenState extends State<CartScreen> {
                                               imageUrl: imageUrl,
                                               fit: BoxFit.cover,
                                               errorWidget: (ctx, url, err) => Container(
-                                                color: AppColors.background,
-                                                child: const Icon(Icons.medication, color: AppColors.divider),
+                                                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                                child: Icon(Icons.medication, color: Theme.of(context).dividerColor),
                                               ),
                                             )
                                           : Container(
-                                              color: AppColors.background,
-                                              child: const Icon(Icons.medication, color: AppColors.divider),
+                                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                              child: Icon(Icons.medication, color: Theme.of(context).dividerColor),
                                             ),
                                     ),
                                   ),
@@ -115,17 +115,17 @@ class _CartScreenState extends State<CartScreen> {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text(item.productTitle,
-                                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppColors.textPrimary),
+                                                        Text(item.productTitle,
+                                            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
                                             maxLines: 2, overflow: TextOverflow.ellipsis),
                                         const SizedBox(height: 4),
                                         Text('GHS ${item.productPrice.toStringAsFixed(2)} each',
-                                            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                                            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(150), fontSize: 12)),
                                         const SizedBox(height: 8),
                                         Row(
                                           children: [
                                             // Qty controls
-                                            _qtyButton(Icons.remove, () {
+                                            _qtyButton(context, Icons.remove, () {
                                               if (item.qty > 1) {
                                                 cart.updateItem(item.productId, item.qty - 1);
                                               } else {
@@ -134,9 +134,9 @@ class _CartScreenState extends State<CartScreen> {
                                             }),
                                             Padding(
                                               padding: const EdgeInsets.symmetric(horizontal: 12),
-                                              child: Text('${item.qty}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                                              child: Text('${item.qty}', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: Theme.of(context).colorScheme.onSurface)),
                                             ),
-                                            _qtyButton(Icons.add, () {
+                                            _qtyButton(context, Icons.add, () {
                                               if (item.qty < item.productStock) {
                                                 cart.updateItem(item.productId, item.qty + 1);
                                               }
@@ -161,7 +161,7 @@ class _CartScreenState extends State<CartScreen> {
                     Container(
                       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).cardColor,
                         boxShadow: [BoxShadow(color: Colors.black.withAlpha(15), blurRadius: 10, offset: const Offset(0, -2))],
                       ),
                       child: Column(
@@ -189,13 +189,16 @@ class _CartScreenState extends State<CartScreen> {
     );
   }
 
-  Widget _qtyButton(IconData icon, VoidCallback onTap) {
+  Widget _qtyButton(BuildContext context, IconData icon, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(border: Border.all(color: AppColors.divider), borderRadius: BorderRadius.circular(6)),
-        child: Icon(icon, size: 14, color: AppColors.textPrimary),
+        decoration: BoxDecoration(
+          border: Border.all(color: Theme.of(context).dividerColor),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Icon(icon, size: 14, color: Theme.of(context).colorScheme.onSurface),
       ),
     );
   }

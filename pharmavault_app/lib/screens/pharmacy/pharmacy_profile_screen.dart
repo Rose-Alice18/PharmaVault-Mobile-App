@@ -60,7 +60,7 @@ class _PharmacyProfileScreenState extends State<PharmacyProfileScreen> {
     final initials = name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'P';
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
         child: Column(
           children: [

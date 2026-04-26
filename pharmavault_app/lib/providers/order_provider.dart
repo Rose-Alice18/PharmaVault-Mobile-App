@@ -69,8 +69,8 @@ class OrderProvider extends ChangeNotifier {
       _selectedItems = (itemsRaw as List).map((row) {
         final r  = row as Map<String, dynamic>;
         final p  = r['products'] as Map<String, dynamic>? ?? {};
-        final qty = r['item_qty'] as int? ?? 1;
-        final price = double.tryParse(r['item_price'].toString()) ?? 0.0;
+        final qty = r['qty'] as int? ?? 1;
+        final price = double.tryParse(r['product_price'].toString()) ?? 0.0;
         return OrderItemModel(
           productId:    p['product_id'] as int? ?? 0,
           qty:          qty,
@@ -96,6 +96,7 @@ class OrderProvider extends ChangeNotifier {
     required String address,
     required String city,
     required String contact,
+    double deliveryFee = 0.0,
     bool isPaid = false,
     double paymentAmount = 0.0,
     String? paymentReference,
@@ -135,16 +136,18 @@ class OrderProvider extends ChangeNotifier {
       final invoiceNo = 'INV-${ts.year}-${ts.millisecondsSinceEpoch.toString().substring(7)}';
 
       // 4. Insert order row
+      final grandTotal = total + deliveryFee;
       final deliveryNotes = jsonEncode({
-        'address': address,
-        'city':    city,
-        'contact': contact,
+        'address':      address,
+        'city':         city,
+        'contact':      contact,
+        'delivery_fee': deliveryFee,
       });
 
       final orderRes = await _db.from('orders').insert({
         'invoice_no':      invoiceNo,
         'c_id':            _uid,
-        'order_total':     total,
+        'order_total':     grandTotal,
         'order_status':    'pending',
         'delivery_notes':  deliveryNotes,
         'payment_amount':  paymentAmount,
@@ -159,11 +162,13 @@ class OrderProvider extends ChangeNotifier {
               (item['products'] as Map<String, dynamic>?)?['product_price'].toString() ?? '0',
             ) ??
             0.0;
+        final qty = item['cart_qty'] as int;
         return {
-          'order_id':  orderId,
-          'product_id': item['product_id'] as int,
-          'item_qty':  item['cart_qty'] as int,
-          'item_price': price,
+          'order_id':     orderId,
+          'product_id':   item['product_id'] as int,
+          'qty':          qty,
+          'product_price': price,
+          'line_total':   price * qty,
         };
       }).toList();
       await _db.from('order_items').insert(itemRows);

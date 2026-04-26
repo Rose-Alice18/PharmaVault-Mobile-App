@@ -140,7 +140,7 @@ class _PharmacyInventoryScreenState extends State<PharmacyInventoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('My Inventory'),
         backgroundColor: Colors.white,

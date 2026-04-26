@@ -46,15 +46,17 @@ class _PrescriptionsScreenState extends State<PrescriptionsScreen> {
     final pp = context.watch<PrescriptionProvider>();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(title: const Text('My Prescriptions')),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.pushNamed(context, '/upload-prescription'),
-        icon: const Icon(Icons.upload_file),
-        label: const Text('Upload'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-      ),
+      floatingActionButton: pp.prescriptions.isEmpty
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: () => Navigator.pushNamed(context, '/upload-prescription'),
+              icon: const Icon(Icons.upload_file),
+              label: const Text('Upload'),
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
       body: pp.isLoading
           ? const Center(child: CircularProgressIndicator())
           : pp.prescriptions.isEmpty

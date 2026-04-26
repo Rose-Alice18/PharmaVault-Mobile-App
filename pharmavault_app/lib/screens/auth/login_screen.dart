@@ -16,9 +16,10 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _formKey    = GlobalKey<FormState>();
-  final _emailCtrl  = TextEditingController();
-  final _passCtrl   = TextEditingController();
+  final _formKey   = GlobalKey<FormState>();
+  final _emailCtrl = TextEditingController();
+  final _passCtrl  = TextEditingController();
+  bool _submitted  = false;
 
   @override
   void dispose() {
@@ -28,13 +29,19 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _submit() async {
+    setState(() => _submitted = true);
     if (!_formKey.currentState!.validate()) return;
     final auth = context.read<AuthProvider>();
-    final ok   = await auth.login(_emailCtrl.text.trim(), _passCtrl.text);
+    final ok   = await auth.login(
+      _emailCtrl.text.trim().toLowerCase(),
+      _passCtrl.text,
+    );
     if (!mounted) return;
     if (ok) {
       context.read<NotificationProvider>().subscribe(auth.userId!);
-      if (auth.isPharmacy) {
+      if (auth.isPendingPharmacy) {
+        Navigator.pushReplacementNamed(context, '/pharmacy-pending');
+      } else if (auth.isPharmacy) {
         Navigator.pushReplacementNamed(context, '/pharmacy-main');
       } else {
         context.read<CartProvider>().fetchCart();
@@ -53,7 +60,9 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
     if (ok) {
       context.read<NotificationProvider>().subscribe(auth.userId!);
-      if (auth.isPharmacy) {
+      if (auth.isPendingPharmacy) {
+        Navigator.pushReplacementNamed(context, '/pharmacy-pending');
+      } else if (auth.isPharmacy) {
         Navigator.pushReplacementNamed(context, '/pharmacy-main');
       } else {
         context.read<CartProvider>().fetchCart();
@@ -71,17 +80,19 @@ class _LoginScreenState extends State<LoginScreen> {
     final isLoading = context.watch<AuthProvider>().isLoading;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
           child: Form(
             key: _formKey,
+            autovalidateMode: _submitted
+                ? AutovalidateMode.onUserInteraction
+                : AutovalidateMode.disabled,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 20),
-                // Logo
                 Center(
                   child: Container(
                     width: 80,
@@ -94,9 +105,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
-                const Text('Welcome back', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                const Text('Welcome back',
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
                 const SizedBox(height: 6),
-                const Text('Sign in to your PharmaVault account', style: TextStyle(fontSize: 15, color: AppColors.textSecondary)),
+                const Text('Sign in to your PharmaVault account',
+                    style: TextStyle(fontSize: 15, color: AppColors.textSecondary)),
                 const SizedBox(height: 36),
                 AppTextField(
                   label: 'Email address',
@@ -115,10 +128,20 @@ class _LoginScreenState extends State<LoginScreen> {
                   inputFormatters: AppFormatters.password,
                   validator: (v) => (v == null || v.isEmpty) ? 'Password is required.' : null,
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: GestureDetector(
+                    onTap: () => Navigator.pushNamed(context, '/forgot-password'),
+                    child: const Text(
+                      'Forgot Password?',
+                      style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 13),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
                 AppButton(label: 'Sign In', onPressed: _submit, isLoading: isLoading),
                 const SizedBox(height: 20),
-                // Divider
                 Row(
                   children: [
                     const Expanded(child: Divider(color: AppColors.divider)),
@@ -130,7 +153,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
                 const SizedBox(height: 20),
-                // Google Sign In button
                 GestureDetector(
                   onTap: isLoading ? null : _googleSignIn,
                   child: Container(
@@ -142,12 +164,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       border: Border.all(color: AppColors.divider),
                       boxShadow: [BoxShadow(color: Colors.black.withAlpha(8), blurRadius: 6)],
                     ),
-                    child: Row(
+                    child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const _GoogleIcon(),
-                        const SizedBox(width: 12),
-                        const Text(
+                        _GoogleIcon(),
+                        SizedBox(width: 12),
+                        Text(
                           'Continue with Google',
                           style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                         ),
@@ -162,7 +184,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     const Text("Don't have an account? ", style: TextStyle(color: AppColors.textSecondary)),
                     GestureDetector(
                       onTap: () => Navigator.pushNamed(context, '/register'),
-                      child: const Text('Register', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
+                      child: const Text('Register',
+                          style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
                     ),
                   ],
                 ),

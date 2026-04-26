@@ -170,7 +170,7 @@ class _PharmacyOrderDetailScreenState extends State<PharmacyOrderDetailScreen> {
     try { dateStr = DateFormat('d MMM yyyy, h:mm a').format(DateTime.parse(o['order_date'] as String)); } catch (_) {}
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text('Invoice #${o['invoice_no']}'),
         backgroundColor: Colors.white,

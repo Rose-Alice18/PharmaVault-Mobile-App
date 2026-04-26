@@ -162,16 +162,19 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
     final location = context.watch<LocationProvider>();
     final resultCount = _tabController.index == 0 ? pp.products.length : _filteredPharmacies.length;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
+      value: (isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark)
+          .copyWith(statusBarColor: Colors.transparent),
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ── Header ───────────────────────────────────────────────────
             Container(
-              color: Colors.white,
+              color: Theme.of(context).cardColor,
               padding: EdgeInsets.only(
                 top: MediaQuery.of(context).padding.top + 14,
                 left: 20, right: 20, bottom: 0,
@@ -179,16 +182,16 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Search',
-                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: AppColors.textPrimary),
+                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: onSurface),
                   ),
                   const SizedBox(height: 12),
                   // Search field
                   Container(
                     height: 50,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF4F6F5),
+                      color: isDark ? const Color(0xFF1F2937) : const Color(0xFFF4F6F5),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: TextField(
@@ -196,7 +199,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                       focusNode: _focusNode,
                       onChanged: _onSearch,
                       inputFormatters: AppFormatters.search,
-                      style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+                      style: TextStyle(fontSize: 14, color: onSurface),
                       decoration: InputDecoration(
                         hintText: _tabController.index == 0
                             ? 'Search medicines, brands...'
@@ -248,7 +251,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
 
             // ── Tabs ─────────────────────────────────────────────────────
             Container(
-              color: Colors.white,
+              color: Theme.of(context).cardColor,
               child: TabBar(
                 controller: _tabController,
                 labelColor: AppColors.primary,
@@ -309,7 +312,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                     children: [
                       if (pp.categories.isNotEmpty)
                         Container(
-                          color: Colors.white,
+                          color: Theme.of(context).cardColor,
                           height: 50,
                           child: ListView.builder(
                             scrollDirection: Axis.horizontal,
@@ -320,6 +323,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                               final catId    = isAll ? null : pp.categories[i - 1].catId;
                               final label    = isAll ? 'All' : pp.categories[i - 1].catName;
                               final selected = _selectedCatId == catId;
+                              final isDarkInner = Theme.of(context).brightness == Brightness.dark;
                               return GestureDetector(
                                 onTap: () => _filterByCat(catId),
                                 child: AnimatedContainer(
@@ -327,7 +331,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                                   margin: const EdgeInsets.only(right: 8),
                                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: selected ? AppColors.primary : const Color(0xFFF4F6F5),
+                                    color: selected ? AppColors.primary : (isDarkInner ? const Color(0xFF1F2937) : const Color(0xFFF4F6F5)),
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Text(
@@ -365,9 +369,9 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                                           margin: const EdgeInsets.only(bottom: 10),
                                           padding: const EdgeInsets.all(12),
                                           decoration: BoxDecoration(
-                                            color: Colors.white,
+                                            color: Theme.of(context).cardColor,
                                             borderRadius: BorderRadius.circular(16),
-                                            border: Border.all(color: const Color(0xFFF0F0F0), width: 1.5),
+                                            border: Border.all(color: Theme.of(context).dividerColor, width: 1.5),
                                             boxShadow: [BoxShadow(color: Colors.black.withAlpha(6), blurRadius: 8, offset: const Offset(0, 2))],
                                           ),
                                           child: Row(
@@ -403,7 +407,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                                                         Expanded(
                                                           child: Text(
                                                             product.productTitle,
-                                                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.textPrimary),
+                                                            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
                                                             maxLines: 1, overflow: TextOverflow.ellipsis,
                                                           ),
                                                         ),
@@ -485,9 +489,9 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                                     margin: const EdgeInsets.only(bottom: 10),
                                     padding: const EdgeInsets.all(14),
                                     decoration: BoxDecoration(
-                                      color: Colors.white,
+                                      color: Theme.of(context).cardColor,
                                       borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(color: const Color(0xFFF0F0F0), width: 1.5),
+                                      border: Border.all(color: Theme.of(context).dividerColor, width: 1.5),
                                       boxShadow: [BoxShadow(color: Colors.black.withAlpha(6), blurRadius: 8, offset: const Offset(0, 2))],
                                     ),
                                     child: Row(
@@ -506,7 +510,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                                              Text(p.customerName, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.textPrimary)),
+                                              Text(p.customerName, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Theme.of(context).colorScheme.onSurface)),
                                               if (p.customerCity != null) ...[
                                                 const SizedBox(height: 3),
                                                 Row(
@@ -595,7 +599,7 @@ class _EmptyState extends StatelessWidget {
             child: Icon(icon, size: 40, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 16),
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: AppColors.textPrimary)),
+          Text(title, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: Theme.of(context).colorScheme.onSurface)),
           const SizedBox(height: 4),
           Text(subtitle, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
         ],

@@ -29,10 +29,13 @@ class _HomeScreenState extends State<HomeScreen> {
     super.didChangeDependencies();
     if (!_initialised) {
       _initialised = true;
-      final pp = context.read<ProductProvider>();
-      pp.fetchProducts(limit: 10);
-      pp.fetchCategories();
-      _fetchPharmacies();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final pp = context.read<ProductProvider>();
+        pp.fetchProducts(limit: 10);
+        pp.fetchCategories();
+        _fetchPharmacies();
+      });
     }
   }
 
@@ -122,19 +125,22 @@ class _HomeScreenState extends State<HomeScreen> {
     final location  = context.watch<LocationProvider>();
     final firstName = auth.customerName?.split(' ').first;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
+      value: (isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark)
+          .copyWith(statusBarColor: Colors.transparent),
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: RefreshIndicator(
           onRefresh: _onRefresh,
           color: AppColors.primary,
           child: CustomScrollView(
             slivers: [
-              // ── White header ──────────────────────────────────────────────
+              // ── Header ────────────────────────────────────────────────────
               SliverToBoxAdapter(
                 child: Container(
-                  color: Colors.white,
+                  color: Theme.of(context).cardColor,
                   padding: EdgeInsets.only(
                     top: MediaQuery.of(context).padding.top + 10,
                     left: 20,
@@ -156,8 +162,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 children: [
                                   Text(
                                     location.cityName,
-                                    style: const TextStyle(
-                                      color: AppColors.textPrimary,
+                                    style: TextStyle(
+                                      color: onSurface,
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -174,13 +180,13 @@ class _HomeScreenState extends State<HomeScreen> {
                               width: 40,
                               height: 40,
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF4F6F5),
+                                color: isDark ? const Color(0xFF1F2937) : const Color(0xFFF4F6F5),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Stack(
                                 alignment: Alignment.center,
                                 children: [
-                                  const Icon(Icons.notifications_outlined, color: AppColors.textPrimary, size: 22),
+                                  Icon(Icons.notifications_outlined, color: onSurface, size: 22),
                                   Positioned(
                                     right: 8, top: 8,
                                     child: Container(
@@ -198,7 +204,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       // Greeting
                       Text(
                         _greeting(firstName),
-                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: onSurface),
                       ),
                       const SizedBox(height: 2),
                       const Text(
@@ -212,7 +218,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Container(
                           height: 50,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF4F6F5),
+                            color: isDark ? const Color(0xFF1F2937) : const Color(0xFFF4F6F5),
                             borderRadius: BorderRadius.circular(14),
                           ),
                           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -253,7 +259,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           padding: const EdgeInsets.all(18),
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
-                              colors: [Color(0xFF2563EB), Color(0xFF7C3AED)],
+                              colors: [Color(0xFF1B8A4C), Color(0xFF34C77B)],
                               begin: Alignment.centerLeft,
                               end: Alignment.centerRight,
                             ),
@@ -336,7 +342,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       textAlign: TextAlign.center,
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: AppColors.textPrimary),
+                                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface),
                                     ),
                                   ],
                                 ),
@@ -429,7 +435,7 @@ class _SectionHeader extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+          Text(title, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurface)),
           if (onSeeAll != null)
             GestureDetector(
               onTap: onSeeAll,
@@ -457,7 +463,7 @@ class _ProductCard extends StatelessWidget {
         width: 155,
         margin: const EdgeInsets.only(right: 14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 12, offset: const Offset(0, 4)),
@@ -526,7 +532,7 @@ class _ProductCard extends StatelessWidget {
                       product.productTitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textPrimary, height: 1.3),
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface, height: 1.3),
                     ),
                     if (product.brandName != null) ...[
                       const SizedBox(height: 2),
@@ -580,9 +586,9 @@ class _PharmacyCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFF0F0F0), width: 1.5),
+          border: Border.all(color: Theme.of(context).dividerColor, width: 1.5),
           boxShadow: [BoxShadow(color: Colors.black.withAlpha(6), blurRadius: 10, offset: const Offset(0, 3))],
         ),
         child: Row(
@@ -603,7 +609,7 @@ class _PharmacyCard extends StatelessWidget {
                 children: [
                   Text(
                     pharmacy.customerName,
-                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.textPrimary),
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
                   ),
                   const SizedBox(height: 3),
                   if (pharmacy.customerCity != null)

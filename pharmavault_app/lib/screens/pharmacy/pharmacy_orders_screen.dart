@@ -92,7 +92,7 @@ class _PharmacyOrdersScreenState extends State<PharmacyOrdersScreen> {
     final pending = _orders.where((o) => o['order_status'] == 'pending').length;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Row(
           mainAxisSize: MainAxisSize.min,

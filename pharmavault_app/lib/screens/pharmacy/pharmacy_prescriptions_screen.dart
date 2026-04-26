@@ -106,7 +106,7 @@ class _PharmacyPrescriptionsScreenState extends State<PharmacyPrescriptionsScree
     final pending = _all.where((p) => p['status'] == 'pending').length;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Row(
           mainAxisSize: MainAxisSize.min,

@@ -1,6 +1,5 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../constants/app_colors.dart';
 import '../utils/validators.dart';
 
@@ -12,7 +11,9 @@ class SavedAddressesScreen extends StatefulWidget {
 }
 
 class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
-  static const _prefsKey = 'saved_addresses';
+  static final _db  = Supabase.instance.client;
+  static String? get _uid => _db.auth.currentUser?.id;
+
   List<_Address> _addresses = [];
   bool _loading = true;
 
@@ -23,31 +24,37 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
   }
 
   Future<void> _loadAddresses() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_prefsKey);
-    setState(() {
-      if (raw != null) {
-        final list = jsonDecode(raw) as List;
-        _addresses = list.map((e) => _Address.fromMap(e as Map<String, dynamic>)).toList();
+    if (_uid == null) { setState(() => _loading = false); return; }
+    setState(() => _loading = true);
+    try {
+      final data = await _db
+          .from('user_addresses')
+          .select()
+          .eq('user_id', _uid!)
+          .order('created_at', ascending: true);
+      if (mounted) {
+        setState(() {
+          _addresses = (data as List)
+              .map((e) => _Address.fromMap(e as Map<String, dynamic>))
+              .toList();
+        });
       }
-      _loading = false;
-    });
+    } catch (_) {}
+    finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
-  Future<void> _persist() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_prefsKey, jsonEncode(_addresses.map((a) => a.toMap()).toList()));
-  }
-
-  void _showAddDialog({_Address? existing, int? index}) {
+  void _showAddDialog({_Address? existing}) {
     final labelCtrl   = TextEditingController(text: existing?.label   ?? '');
     final addressCtrl = TextEditingController(text: existing?.address ?? '');
-    String iconType = existing?.iconType ?? 'home';
+    String iconType   = existing?.iconType ?? 'home';
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setModal) => Padding(
           padding: EdgeInsets.only(
@@ -63,6 +70,7 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 16),
+              // Icon type selector
               Row(
                 children: ['home', 'office', 'other'].map((t) => GestureDetector(
                   onTap: () => setModal(() => iconType = t),
@@ -120,20 +128,17 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     final label   = labelCtrl.text.trim();
                     final address = addressCtrl.text.trim();
                     if (label.isEmpty || address.isEmpty) return;
-                    final addr = _Address(label: label, address: address, iconType: iconType);
-                    setState(() {
-                      if (index != null) {
-                        _addresses[index] = addr;
-                      } else {
-                        _addresses.add(addr);
-                      }
-                    });
-                    _persist();
                     Navigator.pop(ctx);
+                    await _saveAddress(
+                      id:       existing?.id,
+                      label:    label,
+                      address:  address,
+                      iconType: iconType,
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
@@ -150,6 +155,51 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
     );
   }
 
+  Future<void> _saveAddress({
+    String? id,
+    required String label,
+    required String address,
+    required String iconType,
+  }) async {
+    if (_uid == null) return;
+    try {
+      if (id != null) {
+        await _db.from('user_addresses').update({
+          'label':     label,
+          'address':   address,
+          'icon_type': iconType,
+        }).eq('id', id);
+      } else {
+        await _db.from('user_addresses').insert({
+          'user_id':   _uid!,
+          'label':     label,
+          'address':   address,
+          'icon_type': iconType,
+        });
+      }
+      await _loadAddresses();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save: $e'), backgroundColor: AppColors.error),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteAddress(String id) async {
+    try {
+      await _db.from('user_addresses').delete().eq('id', id);
+      setState(() => _addresses.removeWhere((a) => a.id == id));
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete: $e'), backgroundColor: AppColors.error),
+        );
+      }
+    }
+  }
+
   IconData _iconForType(String type) => switch (type) {
     'home'   => Icons.home_rounded,
     'office' => Icons.business_rounded,
@@ -159,7 +209,7 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(title: const Text('Saved Addresses')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddDialog(),
@@ -169,7 +219,7 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
         label: const Text('Add Address', style: TextStyle(fontWeight: FontWeight.w700)),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
           : _addresses.isEmpty
               ? const Center(
                   child: Column(
@@ -177,85 +227,98 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
                     children: [
                       Icon(Icons.location_off_rounded, size: 56, color: AppColors.divider),
                       SizedBox(height: 12),
-                      Text('No saved addresses', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                      Text('No saved addresses',
+                          style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                       SizedBox(height: 4),
-                      Text('Add an address for faster checkout', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                      Text('Add an address for faster checkout',
+                          style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
                     ],
                   ),
                 )
-              : ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-                  itemCount: _addresses.length,
-                  itemBuilder: (context, i) {
-                    final addr = _addresses[i];
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [BoxShadow(color: Colors.black.withAlpha(8), blurRadius: 8)],
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(color: AppColors.primaryLight, borderRadius: BorderRadius.circular(12)),
-                            child: Icon(_iconForType(addr.iconType), color: AppColors.primary, size: 22),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(addr.label,
-                                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.textPrimary)),
-                                const SizedBox(height: 3),
-                                Text(addr.address,
-                                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+              : RefreshIndicator(
+                  onRefresh: _loadAddresses,
+                  color: AppColors.primary,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                    itemCount: _addresses.length,
+                    itemBuilder: (context, i) {
+                      final addr = _addresses[i];
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).cardColor,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [BoxShadow(color: Colors.black.withAlpha(8), blurRadius: 8)],
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                  color: AppColors.primaryLight,
+                                  borderRadius: BorderRadius.circular(12)),
+                              child: Icon(_iconForType(addr.iconType),
+                                  color: AppColors.primary, size: 22),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(addr.label,
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 15,
+                                          color: Theme.of(context).colorScheme.onSurface)),
+                                  const SizedBox(height: 3),
+                                  Text(addr.address,
+                                      style: TextStyle(
+                                          color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
+                                          fontSize: 13)),
+                                ],
+                              ),
+                            ),
+                            PopupMenuButton<String>(
+                              icon: Icon(Icons.more_vert,
+                                  color: Theme.of(context).colorScheme.onSurface.withAlpha(120),
+                                  size: 20),
+                              onSelected: (value) {
+                                if (value == 'delete' && addr.id != null) {
+                                  _deleteAddress(addr.id!);
+                                } else if (value == 'edit') {
+                                  _showAddDialog(existing: addr);
+                                }
+                              },
+                              itemBuilder: (ctx) => [
+                                const PopupMenuItem(value: 'edit',   child: Text('Edit')),
+                                const PopupMenuItem(value: 'delete',
+                                    child: Text('Delete', style: TextStyle(color: AppColors.error))),
                               ],
                             ),
-                          ),
-                          PopupMenuButton<String>(
-                            icon: const Icon(Icons.more_vert, color: AppColors.textSecondary, size: 20),
-                            onSelected: (value) {
-                              if (value == 'delete') {
-                                setState(() => _addresses.removeAt(i));
-                                _persist();
-                              } else if (value == 'edit') {
-                                _showAddDialog(existing: addr, index: i);
-                              }
-                            },
-                            itemBuilder: (ctx) => [
-                              const PopupMenuItem(value: 'edit', child: Text('Edit')),
-                              const PopupMenuItem(value: 'delete', child: Text('Delete', style: TextStyle(color: AppColors.error))),
-                            ],
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
     );
   }
 }
 
 class _Address {
-  final String label;
-  final String address;
-  final String iconType;
-  const _Address({required this.label, required this.address, this.iconType = 'home'});
+  final String? id;
+  final String  label;
+  final String  address;
+  final String  iconType;
+
+  const _Address({this.id, required this.label, required this.address, this.iconType = 'home'});
 
   factory _Address.fromMap(Map<String, dynamic> m) => _Address(
-    label:    m['label']     as String,
-    address:  m['address']   as String,
+    id:       m['id']       as String?,
+    label:    m['label']    as String,
+    address:  m['address']  as String,
     iconType: m['icon_type'] as String? ?? 'home',
   );
-
-  Map<String, dynamic> toMap() => {
-    'label':     label,
-    'address':   address,
-    'icon_type': iconType,
-  };
 }

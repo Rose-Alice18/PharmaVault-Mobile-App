@@ -46,3 +46,26 @@ app.*.map.json
 
 # Supabase credentials — never commit these
 lib/constants/supabase_constants.dart
+
+# Firebase credentials
+google-services.json
+GoogleService-Info.plist
+lib/firebase_options.dart
+
+# Android signing
+android/key.properties
+*.jks
+*.keystore
+
+# iOS signing
+*.p8
+*.p12
+*.cer
+*.mobileprovision
+
+# Environment variables
+.env
+.env.*
+
+# Flutter generated (platform-specific, not needed in source control)
+flutter_export_environment.sh

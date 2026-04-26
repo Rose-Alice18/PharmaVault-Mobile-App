@@ -77,16 +77,15 @@ class PrescriptionProvider extends ChangeNotifier {
 
       // 3. Insert prescription record
       await _db.from('prescriptions').insert({
-        'prescription_number':  rxNumber,
-        'c_id':                 _uid,
-        'doctor_name':          doctorName?.isNotEmpty == true ? doctorName : null,
-        'doctor_license':       doctorLicense?.isNotEmpty == true ? doctorLicense : null,
-        'issue_date':           issueDate?.isNotEmpty == true ? issueDate : null,
-        'expiry_date':          expiryDate?.isNotEmpty == true ? expiryDate : null,
-        'prescription_notes':   notes?.isNotEmpty == true ? notes : null,
+        'prescription_number':   rxNumber,
+        'c_id':                  _uid,
+        'doctor_name':           doctorName?.isNotEmpty == true ? doctorName : null,
+        'issue_date':            issueDate?.isNotEmpty == true ? issueDate : null,
+        'expiry_date':           expiryDate?.isNotEmpty == true ? expiryDate : null,
+        'prescription_notes':    notes?.isNotEmpty == true ? notes : null,
         'allow_pharmacy_access': allowAccess,
-        'status':               'pending',
-        'prescription_image':   imageUrl,
+        'status':                'pending',
+        'prescription_image':    imageUrl,
       });
 
       _isLoading = false;
@@ -94,7 +93,7 @@ class PrescriptionProvider extends ChangeNotifier {
       await fetchPrescriptions();
       return true;
     } catch (e) {
-      _error     = 'Failed to upload prescription.';
+      _error     = 'Upload failed: ${e.toString().replaceAll('Exception: ', '')}';
       _isLoading = false;
       notifyListeners();
       return false;

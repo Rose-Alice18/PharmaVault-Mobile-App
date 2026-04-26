@@ -7,6 +7,7 @@ import '../constants/app_colors.dart';
 import '../constants/supabase_constants.dart';
 import '../models/pharmacy_model.dart';
 import '../providers/cart_provider.dart';
+import '../services/pharmacy_bookmark_service.dart';
 
 class PharmacyDetailScreen extends StatefulWidget {
   const PharmacyDetailScreen({super.key});
@@ -17,13 +18,31 @@ class PharmacyDetailScreen extends StatefulWidget {
 
 class _PharmacyDetailScreenState extends State<PharmacyDetailScreen> {
   List<Map<String, dynamic>> _products = [];
-  bool _loading = true;
+  bool _loading  = true;
+  bool _isSaved  = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final pharmacy = ModalRoute.of(context)!.settings.arguments as PharmacyModel;
     _fetchProducts(pharmacy.customerId);
+    _loadBookmark(pharmacy.customerId);
+  }
+
+  Future<void> _loadBookmark(String id) async {
+    final saved = await PharmacyBookmarkService.isSaved(id);
+    if (mounted) setState(() => _isSaved = saved);
+  }
+
+  Future<void> _toggleBookmark(PharmacyModel pharmacy) async {
+    final nowSaved = await PharmacyBookmarkService.toggle(pharmacy.customerId);
+    if (mounted) {
+      setState(() => _isSaved = nowSaved);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(nowSaved ? 'Pharmacy saved!' : 'Pharmacy removed from saved'),
+        duration: const Duration(seconds: 2),
+      ));
+    }
   }
 
   Future<void> _fetchProducts(String pharmacyId) async {
@@ -61,16 +80,36 @@ class _PharmacyDetailScreenState extends State<PharmacyDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(40),
-                        borderRadius: BorderRadius.circular(10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withAlpha(40),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+                        ),
                       ),
-                      child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
-                    ),
+                      GestureDetector(
+                        onTap: () => _toggleBookmark(pharmacy),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withAlpha(40),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(
+                            _isSaved ? Icons.bookmark_rounded : Icons.bookmark_outline_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 20),
                   Row(
