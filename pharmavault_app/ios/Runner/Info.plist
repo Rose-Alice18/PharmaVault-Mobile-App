@@ -47,6 +47,10 @@
 			</array>
 		</dict>
 	</dict>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>PharmaVault uses the microphone for voice search</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>PharmaVault uses speech recognition to search for medicines by voice</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

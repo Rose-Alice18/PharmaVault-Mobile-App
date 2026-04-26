@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
@@ -61,7 +62,22 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: Text('Invoice #${order.invoiceNo}')),
+      appBar: AppBar(
+        title: Text('Invoice #${order.invoiceNo}'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.copy_rounded, size: 20),
+            tooltip: 'Copy invoice number',
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: order.invoiceNo));
+              HapticFeedback.lightImpact();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Invoice number copied'), duration: Duration(seconds: 2)),
+              );
+            },
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

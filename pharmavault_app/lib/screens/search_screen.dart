@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../constants/app_colors.dart';
 import '../constants/supabase_constants.dart';
@@ -22,6 +23,8 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   late TabController _tabController;
   final _searchCtrl = TextEditingController();
   final _focusNode  = FocusNode();
+  final _speech     = SpeechToText();
+  bool _isListening = false;
   int? _selectedCatId;
 
   List<PharmacyModel> _pharmacies = [];
@@ -108,8 +111,44 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
     );
   }
 
+  Future<void> _toggleListening() async {
+    HapticFeedback.lightImpact();
+    if (_isListening) {
+      await _speech.stop();
+      setState(() => _isListening = false);
+      return;
+    }
+    final available = await _speech.initialize(
+      onStatus: (s) {
+        if (s == 'done' || s == 'notListening') setState(() => _isListening = false);
+      },
+      onError: (_) => setState(() => _isListening = false),
+    );
+    if (!available) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Microphone not available')),
+        );
+      }
+      return;
+    }
+    setState(() => _isListening = true);
+    await _speech.listen(
+      onResult: (result) {
+        setState(() => _searchCtrl.text = result.recognizedWords);
+        if (result.finalResult) {
+          _onSearch(result.recognizedWords);
+          setState(() => _isListening = false);
+        }
+      },
+      listenFor: const Duration(seconds: 15),
+      pauseFor:  const Duration(seconds: 3),
+    );
+  }
+
   @override
   void dispose() {
+    _speech.stop();
     _tabController.dispose();
     _searchCtrl.dispose();
     _focusNode.dispose();
@@ -164,20 +203,35 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                             : 'Search pharmacies...',
                         hintStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
                         prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textSecondary, size: 22),
-                        suffixIcon: _searchCtrl.text.isNotEmpty
+                        suffixIcon: _isListening
                             ? IconButton(
-                                icon: const Icon(Icons.cancel_rounded, size: 18, color: AppColors.textSecondary),
-                                onPressed: () {
-                                  _searchCtrl.clear();
-                                  _onSearch('');
-                                },
+                                icon: const Icon(Icons.stop_circle_rounded, size: 22, color: AppColors.error),
+                                onPressed: _toggleListening,
                               )
-                            : null,
+                            : _searchCtrl.text.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.cancel_rounded, size: 18, color: AppColors.textSecondary),
+                                    onPressed: () { setState(() => _searchCtrl.clear()); _onSearch(''); },
+                                  )
+                                : IconButton(
+                                    icon: const Icon(Icons.mic_rounded, size: 20, color: AppColors.textSecondary),
+                                    onPressed: _toggleListening,
+                                  ),
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                     ),
                   ),
+                  if (_isListening) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(Icons.mic_rounded, size: 13, color: AppColors.error),
+                        const SizedBox(width: 4),
+                        const Text('Listening...', style: TextStyle(fontSize: 12, color: AppColors.error, fontWeight: FontWeight.w500)),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 8),
                   // Result count
                   if (!pp.isLoading && !_pharmaciesLoading)

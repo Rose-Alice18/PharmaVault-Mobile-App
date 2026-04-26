@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../constants/app_colors.dart';
 
 class HelpSupportScreen extends StatefulWidget {
@@ -20,6 +21,22 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
     _FaqData('How do I track my order?', 'Go to the Orders tab to view your active orders and their current status in real time.'),
   ];
 
+  Future<void> _launch(Uri uri) async {
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open — please try manually.')),
+        );
+      }
+    }
+  }
+
+  void _showLiveChatComingSoon() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Live chat coming soon!')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -38,11 +55,23 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
-                  Expanded(child: _ContactCard(icon: Icons.chat_rounded, label: 'Live Chat', sub: 'Chat with us', color: AppColors.primary, onTap: () {})),
+                  Expanded(child: _ContactCard(
+                    icon: Icons.chat_rounded, label: 'Live Chat', sub: 'Chat with us',
+                    color: AppColors.primary,
+                    onTap: _showLiveChatComingSoon,
+                  )),
                   const SizedBox(width: 10),
-                  Expanded(child: _ContactCard(icon: Icons.phone_rounded, label: 'Call Us', sub: '+233 XX XXX XXXX', color: const Color(0xFF0284C7), onTap: () {})),
+                  Expanded(child: _ContactCard(
+                    icon: Icons.phone_rounded, label: 'Call Us', sub: '+233 XX XXX XXXX',
+                    color: const Color(0xFF0284C7),
+                    onTap: () => _launch(Uri.parse('tel:+233000000000')),
+                  )),
                   const SizedBox(width: 10),
-                  Expanded(child: _ContactCard(icon: Icons.email_rounded, label: 'Email', sub: 'support@pharmavault', color: const Color(0xFF7C3AED), onTap: () {})),
+                  Expanded(child: _ContactCard(
+                    icon: Icons.email_rounded, label: 'Email', sub: 'support@pharmavault',
+                    color: const Color(0xFF7C3AED),
+                    onTap: () => _launch(Uri.parse('mailto:support@pharmavault.com?subject=PharmaVault Support')),
+                  )),
                 ],
               ),
             ),

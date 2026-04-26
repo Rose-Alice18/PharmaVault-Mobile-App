@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_colors.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -13,9 +14,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _orderUpdates      = true;
   bool _promotions        = false;
   bool _locationAccess    = true;
+  bool _loaded            = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPrefs();
+  }
+
+  Future<void> _loadPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _pushNotifications = prefs.getBool('notif_push')      ?? true;
+      _orderUpdates      = prefs.getBool('notif_orders')    ?? true;
+      _promotions        = prefs.getBool('notif_promo')     ?? false;
+      _locationAccess    = prefs.getBool('privacy_location') ?? true;
+      _loaded            = true;
+    });
+  }
+
+  Future<void> _save(String key, bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(key, value);
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (!_loaded) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('Settings')),
@@ -31,7 +58,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 title: 'Push Notifications',
                 subtitle: 'Receive push notifications',
                 value: _pushNotifications,
-                onChanged: (v) => setState(() => _pushNotifications = v),
+                onChanged: (v) { setState(() => _pushNotifications = v); _save('notif_push', v); },
               ),
               _divider(),
               _switchTile(
@@ -39,7 +66,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 title: 'Order Updates',
                 subtitle: 'Order status and delivery updates',
                 value: _orderUpdates,
-                onChanged: (v) => setState(() => _orderUpdates = v),
+                onChanged: (v) { setState(() => _orderUpdates = v); _save('notif_orders', v); },
               ),
               _divider(),
               _switchTile(
@@ -47,7 +74,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 title: 'Promotions',
                 subtitle: 'Deals, discounts and offers',
                 value: _promotions,
-                onChanged: (v) => setState(() => _promotions = v),
+                onChanged: (v) { setState(() => _promotions = v); _save('notif_promo', v); },
               ),
             ]),
             const SizedBox(height: 16),
@@ -58,15 +85,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 title: 'Location Access',
                 subtitle: 'Used to find nearby pharmacies',
                 value: _locationAccess,
-                onChanged: (v) => setState(() => _locationAccess = v),
+                onChanged: (v) { setState(() => _locationAccess = v); _save('privacy_location', v); },
               ),
             ]),
             const SizedBox(height: 16),
             _sectionLabel('App'),
             _SectionCard(children: [
-              _navTile(context, icon: Icons.language_rounded, title: 'Language', trailing: 'English'),
+              _navTile(context, icon: Icons.language_rounded,   title: 'Language',            trailing: 'English'),
               _divider(),
-              _navTile(context, icon: Icons.info_rounded, title: 'About PharmaVault', trailing: 'v1.0.0'),
+              _navTile(context, icon: Icons.info_rounded,       title: 'About PharmaVault',   trailing: 'v1.0.0'),
               _divider(),
               _navTile(context, icon: Icons.privacy_tip_rounded, title: 'Privacy Policy'),
               _divider(),

@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../../constants/app_colors.dart';
 import '../../models/prescription_model.dart';
@@ -39,6 +40,19 @@ class PrescriptionDetailScreen extends StatelessWidget {
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
         surfaceTintColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.copy_rounded, size: 20),
+            tooltip: 'Copy reference number',
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: rx.prescriptionNumber));
+              HapticFeedback.lightImpact();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Reference number copied'), duration: Duration(seconds: 2)),
+              );
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
