@@ -28,6 +28,9 @@ class PrescriptionDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final rx          = ModalRoute.of(context)!.settings.arguments as PrescriptionModel;
     final statusColor = _statusColor(rx.status);
+    final cardColor   = Theme.of(context).cardColor;
+    final onSurface   = Theme.of(context).colorScheme.onSurface;
+    final surfaceHigh = Theme.of(context).colorScheme.surfaceContainerHighest;
 
     String uploadDate = '';
     try { uploadDate = DateFormat('d MMM yyyy').format(DateTime.parse(rx.uploadedAt ?? '')); } catch (_) {}
@@ -36,10 +39,10 @@ class PrescriptionDetailScreen extends StatelessWidget {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(rx.prescriptionNumber),
-        backgroundColor: Colors.white,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: Theme.of(context).cardColor,
+        foregroundColor: onSurface,
         elevation: 0,
-        surfaceTintColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
         actions: [
           IconButton(
             icon: const Icon(Icons.copy_rounded, size: 20),
@@ -64,7 +67,7 @@ class PrescriptionDetailScreen extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: cardColor,
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [BoxShadow(color: Colors.black.withAlpha(8), blurRadius: 6)],
               ),
@@ -99,7 +102,7 @@ class PrescriptionDetailScreen extends StatelessWidget {
                             'expired'  => 'Please get a new prescription from your doctor.',
                             _          => '',
                           },
-                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, height: 1.4),
+                          style: TextStyle(color: onSurface.withAlpha(150), fontSize: 12, height: 1.4),
                         ),
                       ],
                     ),
@@ -111,11 +114,19 @@ class PrescriptionDetailScreen extends StatelessWidget {
 
             // Image
             if (rx.prescriptionImage != null && rx.prescriptionImage!.isNotEmpty) ...[
-              _card(
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: cardColor,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [BoxShadow(color: Colors.black.withAlpha(8), blurRadius: 6)],
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Prescription Image', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                    Text('Prescription Image',
+                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: onSurface)),
                     const SizedBox(height: 12),
                     ClipRRect(
                       borderRadius: BorderRadius.circular(10),
@@ -124,12 +135,12 @@ class PrescriptionDetailScreen extends StatelessWidget {
                         width: double.infinity,
                         fit: BoxFit.contain,
                         placeholder: (ctx, url) => Container(
-                          height: 200, color: const Color(0xFFF4F6F5),
+                          height: 200, color: surfaceHigh,
                           child: const Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)),
                         ),
                         errorWidget: (ctx, url, err) => Container(
-                          height: 120, color: const Color(0xFFF4F6F5),
-                          child: const Center(child: Icon(Icons.broken_image_outlined, color: AppColors.textSecondary, size: 40)),
+                          height: 120, color: surfaceHigh,
+                          child: Center(child: Icon(Icons.broken_image_outlined, color: onSurface.withAlpha(120), size: 40)),
                         ),
                       ),
                     ),
@@ -139,25 +150,34 @@ class PrescriptionDetailScreen extends StatelessWidget {
               const SizedBox(height: 12),
             ],
 
-            // Details
-            _card(
+            // Details card
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: cardColor,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [BoxShadow(color: Colors.black.withAlpha(8), blurRadius: 6)],
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Prescription Details', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                  Text('Prescription Details',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: onSurface)),
                   const SizedBox(height: 14),
-                  _infoRow(Icons.tag_rounded, 'Reference', rx.prescriptionNumber),
+                  _infoRow(context, Icons.tag_rounded, 'Reference', rx.prescriptionNumber),
                   if (uploadDate.isNotEmpty)
-                    _infoRow(Icons.calendar_today_outlined, 'Uploaded', uploadDate),
+                    _infoRow(context, Icons.calendar_today_outlined, 'Uploaded', uploadDate),
                   if (rx.doctorName != null && rx.doctorName!.isNotEmpty)
-                    _infoRow(Icons.medical_services_outlined, 'Doctor', 'Dr. ${rx.doctorName}'),
+                    _infoRow(context, Icons.medical_services_outlined, 'Doctor', 'Dr. ${rx.doctorName}'),
                   if (rx.issueDate != null && rx.issueDate!.isNotEmpty)
-                    _infoRow(Icons.date_range_outlined, 'Issue Date', rx.issueDate!),
+                    _infoRow(context, Icons.date_range_outlined, 'Issue Date', rx.issueDate!),
                   if (rx.expiryDate != null && rx.expiryDate!.isNotEmpty)
-                    _infoRow(Icons.event_busy_outlined, 'Expiry Date', rx.expiryDate!),
+                    _infoRow(context, Icons.event_busy_outlined, 'Expiry Date', rx.expiryDate!),
                   if (rx.prescriptionNotes != null && rx.prescriptionNotes!.isNotEmpty)
-                    _infoRow(Icons.notes_outlined, 'Notes', rx.prescriptionNotes!),
+                    _infoRow(context, Icons.notes_outlined, 'Notes', rx.prescriptionNotes!),
                   _infoRow(
+                    context,
                     rx.allowPharmacyAccess ? Icons.lock_open_outlined : Icons.lock_outlined,
                     'Pharmacy Access',
                     rx.allowPharmacyAccess ? 'Allowed' : 'Restricted',
@@ -189,27 +209,24 @@ class PrescriptionDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _card({required Widget child}) => Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(14),
-      boxShadow: [BoxShadow(color: Colors.black.withAlpha(8), blurRadius: 6)],
-    ),
-    child: child,
-  );
-
-  Widget _infoRow(IconData icon, String label, String value) {
+  Widget _infoRow(BuildContext context, IconData icon, String label, String value) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 16, color: AppColors.textSecondary),
+          Icon(icon, size: 16, color: onSurface.withAlpha(140)),
           const SizedBox(width: 10),
-          SizedBox(width: 110, child: Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13))),
-          Expanded(child: Text(value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600))),
+          SizedBox(
+            width: 110,
+            child: Text(label,
+                style: TextStyle(color: onSurface.withAlpha(140), fontSize: 13)),
+          ),
+          Expanded(
+            child: Text(value,
+                style: TextStyle(color: onSurface, fontSize: 13, fontWeight: FontWeight.w600)),
+          ),
         ],
       ),
     );

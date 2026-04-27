@@ -39,7 +39,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     _textFade  = CurvedAnimation(parent: _mainCtrl, curve: const Interval(0.4, 0.8, curve: Curves.easeIn));
 
     _mainCtrl.forward();
-    _init();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _init());
   }
 
   @override
